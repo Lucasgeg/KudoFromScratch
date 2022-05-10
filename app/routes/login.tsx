@@ -7,10 +7,15 @@ import {
   validateName,
   validatePassword,
 } from "~/utils/validators.server";
-import type { ActionFunction } from "@remix-run/node";
+import type { ActionFunction, LoaderFunction } from "@remix-run/node";
+import { redirect } from "@remix-run/node";
 import { json } from "@remix-run/node";
-import { login, register } from "~/utils/auth.server";
+import { getUser, login, register } from "~/utils/auth.server";
 import { useActionData } from "@remix-run/react";
+
+export const loader: LoaderFunction = async ({ request }) => {
+  return (await getUser(request)) ? redirect("/") : null;
+};
 
 export const action: ActionFunction = async ({ request }) => {
   const form = await request.formData();
@@ -76,15 +81,15 @@ export const action: ActionFunction = async ({ request }) => {
 
 export default function Login() {
   const actionData = useActionData();
+  const [formError, setFormError] = useState(actionData?.error || "");
+  const [errors, setErrors] = useState(actionData?.errors || "");
   const firstLoad = useRef(true);
   const [action, setAction] = useState("login");
-  const [errors, setErrors] = useState(actionData?.errors || {});
-  const [formError, setFormError] = useState(actionData?.error || "");
   const [formData, setFormData] = useState({
     email: actionData?.fields?.email || "",
     password: actionData?.fields?.password || "",
-    firstName: actionData?.fields?.lastName || "",
-    lastName: actionData?.fields?.firstName || "",
+    firstName: actionData?.fields?.firstname || "",
+    lastName: actionData?.fields?.lastname || "",
   });
 
   // Updates the form data when an input changes
@@ -104,8 +109,6 @@ export default function Login() {
         firstName: "",
         lastName: "",
       };
-      setErrors(newState);
-      setFormError("");
       setFormData(newState);
     }
   }, [action]);
